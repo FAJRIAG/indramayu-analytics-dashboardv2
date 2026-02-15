@@ -1,0 +1,48 @@
+<?php
+
+require __DIR__ . '/vendor/autoload.php';
+
+use Illuminate\Support\Facades\Http;
+
+$baseUrl = 'https://opendata.indramayukab.go.id/api';
+
+function fetchData($endpoint)
+{
+    global $baseUrl;
+    echo "Fetching $endpoint...\n";
+    try {
+        $response = Http::withUserAgent('Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36')
+            ->timeout(10)
+            ->withoutVerifying() // replicating the fix
+            ->get($baseUrl . $endpoint);
+
+        if ($response->successful()) {
+            return $response->json();
+        } else {
+            echo "Failed: " . $response->status() . "\n";
+            return null;
+        }
+    } catch (\Exception $e) {
+        echo "Exception: " . $e->getMessage() . "\n";
+        return null;
+    }
+}
+
+// Bootstrap Laravel to use Http facade (lightweight)
+$app = require_once __DIR__ . '/bootstrap/app.php';
+$kernel = $app->make(Illuminate\Contracts\Console\Kernel::class);
+$kernel->bootstrap();
+
+$endpoints = [
+    '/dashboard/datasets/total',
+    '/dashboard/datasets/top',
+    '/dashboard/datasets/kategori',
+    '/dashboard/datasets/tren_total/bulanan'
+];
+
+foreach ($endpoints as $endpoint) {
+    $data = fetchData($endpoint);
+    echo "Response for $endpoint:\n";
+    print_r($data);
+    echo "\n--------------------------------------------------\n";
+}
